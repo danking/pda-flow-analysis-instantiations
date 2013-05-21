@@ -23,8 +23,7 @@
 ;;                                  [FlowState -> FV]]
 (define (forward-analysis flow-value-lattice
                           fv-next
-                          pda-risc-enh
-                          #:debug [debug 0])
+                          pda-risc-enh)
   ;; push-fstate? : FlowState -> Boolean
   (define push-fstate? (lift-insn/flow push?))
 
