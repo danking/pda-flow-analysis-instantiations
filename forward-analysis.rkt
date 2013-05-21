@@ -15,14 +15,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Forward Analysis
 
-;; forward-analysis : [Lattice FV]
-;;                    [AbstractState -> FV]
+;; forward-analysis : [Lattice FlowValue]
+;;                    [AbstractState FlowValue -> FlowValue]
+;;                    [AbstractState FlowValue AbstractState FlowValue
+;;                       -> FlowValue]
 ;;                    PDA-RISC-ENH
 ;;                    ->
-;;                    [FlowAnalysis [Lattice FlowState]
-;;                                  [FlowState -> FV]]
+;;                    [FlowAnalysis FlowState
+;;                                  [Lattice FlowState]]
+;;
 (define (forward-analysis flow-value-lattice
                           fv-next
+                          pop-fv-next
                           pda-risc-enh)
   ;; push-fstate? : FlowState -> Boolean
   (define push-fstate? (lift-insn/flow push?))
@@ -61,26 +65,20 @@
   (define flow-state-hash-code
     (match-lambda [(flow-state as _) (astate-hash-code as)]))
 
-  ;; next-flow : FlowState -> FlowValue
-  (define (next-flow fstate)
-    (match-define (flow-state astate flow) fstate)
-
-    (fv-next astate flow))
-
   ;; succ-states/flow : FlowState -> [SetOf FlowState]
   (define (succ-states/flow fstate)
     (match-define (flow-state astate fv) fstate)
 
     (for/seteq ([astate~ (in-set (abstract-step astate))])
-      (flow-state astate~ (next-flow fstate))))
+      (flow-state astate~ (fv-next astate fv))))
 
   ;; pop-succ-states/flow : FlowState FlowState -> [SetOf FlowState]
   (define (pop-succ-states/flow push-fstate pop-fstate)
     (match-define (flow-state push-astate push-fv) push-fstate)
-    (match-define (flow-state pop-astate _) pop-fstate)
+    (match-define (flow-state pop-astate pop-fv) pop-fstate)
 
     (for/seteq ([astate~ (in-set (pop-succ-states push-astate pop-astate))])
-      (flow-state astate~ (max push-fv (next-flow pop-fstate)))))
+      (flow-state astate~ (next-flow push-astate push-fv pop-astate pop-fv))))
 
   (FlowAnalysis (initial-flow-state (pda-risc-enh-initial-term pda-risc-enh)
                                     (lattice-bottom flow-value-lattice))
