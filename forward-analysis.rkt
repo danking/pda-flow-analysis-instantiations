@@ -78,7 +78,7 @@
     (match-define (flow-state pop-astate pop-fv) pop-fstate)
 
     (for/seteq ([astate~ (in-set (pop-succ-states push-astate pop-astate))])
-      (flow-state astate~ (next-flow push-astate push-fv pop-astate pop-fv))))
+      (flow-state astate~ (pop-fv-next push-astate push-fv pop-astate pop-fv))))
 
   (FlowAnalysis (initial-flow-state (pda-risc-enh-initial-term pda-risc-enh)
                                     (lattice-bottom flow-value-lattice))
