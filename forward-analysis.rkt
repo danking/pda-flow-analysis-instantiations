@@ -2,7 +2,7 @@
 
 (require "../cfa2/cfa2.rkt"
          ;; TODO this should be a built-in module
-         "../../../lattice/lattice.rkt"
+         "../lattice/lattice.rkt"
          "../semantics/abstract.rkt"
          "../semantics/flow.rkt"
          (only-in "../pda-to-pda-risc/risc-enhanced/data.rkt"

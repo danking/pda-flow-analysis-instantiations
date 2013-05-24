@@ -2,7 +2,7 @@
 
 (require "forward-analysis.rkt"
          ;; TODO this should be a built-in module
-         "../../../lattice/lattice.rkt"
+         "../lattice/lattice.rkt"
          "../semantics/abstract.rkt"
          "../semantics/abstract-utilities.rkt"
          (only-in "../pda-to-pda-risc/risc-enhanced/data.rkt"
