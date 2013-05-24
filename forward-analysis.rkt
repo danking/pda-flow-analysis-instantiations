@@ -1,9 +1,9 @@
 #lang racket
 
 (require "../cfa2/cfa2.rkt"
-         "../cfa2/lattice.rkt"
+         ;; TODO this should be a built-in module
+         "../../../lattice/lattice.rkt"
          "../semantics/abstract.rkt"
-         "../semantics/abstract-utilities.rkt"
          "../semantics/flow.rkt"
          (only-in "../pda-to-pda-risc/risc-enhanced/data.rkt"
                   pda-risc-enh-initial-term
@@ -15,7 +15,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Forward Analysis
 
-;; forward-analysis : [Lattice FlowValue]
+;; forward-analysis : [Bounded-Lattice FlowValue]
 ;;                    [AbstractState FlowValue -> FlowValue]
 ;;                    [AbstractState FlowValue AbstractState FlowValue
 ;;                       -> FlowValue]
@@ -24,7 +24,7 @@
 ;;                    [FlowAnalysis FlowState
 ;;                                  [Lattice FlowState]]
 ;;
-(define (forward-analysis flow-value-lattice
+(define (forward-analysis flow-value-bounded-lattice
                           fv-next
                           pop-fv-next
                           pda-risc-enh)
@@ -38,32 +38,10 @@
   (define (pop-succ-states push pop)
     (abstract-step/new-stack pop (abstract-state-st push)))
 
-  ;; flow-state-join : FlowState FlowState -> FlowState
-  (define flow-state-join
-    (maplift-astate*fv/flow astate-join
-                            (lattice-join flow-value-lattice)))
-
-  ;; flow-state-gte : FlowState FlowState -> Boolean
-  (define flow-state-gte
-    (foldlift-astate*fv/flow astate-gte
-                             (lattice-gte flow-value-lattice)
-                             (lambda (x y)
-                               (and x y))))
-
   (define flow-state-lattice
-    (lattice flow-state-join
-             flow-state-gte
-             (lattice-bottom flow-value-lattice)
-             (lattice-top flow-value-lattice)))
-
-  ;; flow-state-similar? : FlowState FlowState -> Boolean
-  (define flow-state-similar?
-    (match-lambda* [(list (flow-state s1 _)
-                          (flow-state s2 _))
-                    (astate-similar? s1 s2)]))
-  ;; flow-state-hash-code : FlowState -> Number
-  (define flow-state-hash-code
-    (match-lambda [(flow-state as _) (astate-hash-code as)]))
+    (pointwise-bounded-lattice flow-state
+      [flow-state-astate astate-bounded-lattice]
+      [flow-state-flow-value flow-value-bounded-lattice]))
 
   ;; succ-states/flow : FlowState -> [SetOf FlowState]
   (define (succ-states/flow fstate)
@@ -80,9 +58,9 @@
     (for/seteq ([astate~ (in-set (pop-succ-states push-astate pop-astate))])
       (flow-state astate~ (pop-fv-next push-astate push-fv pop-astate pop-fv))))
 
-  (FlowAnalysis (initial-flow-state (pda-risc-enh-initial-term pda-risc-enh)
-                                    (lattice-bottom flow-value-lattice))
-                push-fstate? pop-fstate? flow-state-equal?
-                flow-state-lattice
-                flow-state-similar? flow-state-hash-code
+  (FlowAnalysis (initial-flow-state
+                 (pda-risc-enh-initial-term pda-risc-enh)
+                 (bounded-lattice-bottom flow-value-bounded-lattice))
+                push-fstate? pop-fstate?
+                (get-join-semi-lattice-from-lattice flow-state-lattice)
                 succ-states/flow pop-succ-states/flow))
