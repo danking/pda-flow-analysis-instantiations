@@ -38,6 +38,13 @@
   (define (pop-succ-states push pop)
     (abstract-step/new-stack pop (abstract-state-st push)))
 
+  (define (flow-state-same-chain? fs1 fs2 [recur equal?])
+    (astate-same-chain? (flow-state-astate fs1)
+                        (flow-state-astate fs2)
+                        recur))
+  (define (flow-state-chain-hash-code fs [recur equal-hash-code])
+    (astate-chain-hash-code (flow-state-astate fs) recur))
+
   (define flow-state-lattice
     (pointwise-bounded-lattice flow-state
       [flow-state-astate astate-bounded-lattice]
@@ -63,4 +70,6 @@
                  (bounded-lattice-bottom flow-value-bounded-lattice))
                 push-fstate? pop-fstate?
                 (get-join-semi-lattice-from-lattice flow-state-lattice)
+                flow-state-same-chain?
+                flow-state-chain-hash-code
                 succ-states/flow pop-succ-states/flow))
