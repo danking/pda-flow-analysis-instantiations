@@ -54,9 +54,10 @@
     (for/seteq ([astate~ (in-set (pop-succ-states push-astate pop-astate))])
       (flow-state astate~ (pop-fv-next push-astate push-fv pop-astate pop-fv))))
 
-  (FlowAnalysis (initial-flow-state
-                 (pda-risc-enh-initial-term pda-risc-enh)
-                 (bounded-lattice-bottom flow-value-bounded-lattice))
+  (FlowAnalysis (set
+                 (initial-flow-state
+                  (pda-risc-enh-initial-term pda-risc-enh)
+                  (bounded-lattice-bottom flow-value-bounded-lattice)))
                 push-fstate? pop-fstate?
                 (get-join-semi-lattice-from-lattice
                   (flow-state-lattice flow-value-bounded-lattice))
