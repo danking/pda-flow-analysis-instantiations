@@ -1,6 +1,7 @@
 #lang racket
 
-(require "../cfa2/cfa2.rkt"
+(require "flow-state-utils.rkt"
+         "../cfa2/cfa2.rkt"
          ;; TODO this should be a built-in module
          "../lattice/lattice.rkt"
          "../semantics/abstract.rkt"
@@ -38,18 +39,6 @@
   (define (pop-succ-states push pop)
     (abstract-step/new-stack pop (abstract-state-st push)))
 
-  (define (flow-state-same-chain? fs1 fs2 [recur equal?])
-    (astate-same-chain? (flow-state-astate fs1)
-                        (flow-state-astate fs2)
-                        recur))
-  (define (flow-state-chain-hash-code fs [recur equal-hash-code])
-    (astate-chain-hash-code (flow-state-astate fs) recur))
-
-  (define flow-state-lattice
-    (pointwise-bounded-lattice flow-state
-      [flow-state-astate astate-bounded-lattice]
-      [flow-state-flow-value flow-value-bounded-lattice]))
-
   ;; succ-states/flow : FlowState -> [SetOf FlowState]
   (define (succ-states/flow fstate)
     (match-define (flow-state astate fv) fstate)
@@ -69,7 +58,8 @@
                  (pda-risc-enh-initial-term pda-risc-enh)
                  (bounded-lattice-bottom flow-value-bounded-lattice))
                 push-fstate? pop-fstate?
-                (get-join-semi-lattice-from-lattice flow-state-lattice)
+                (get-join-semi-lattice-from-lattice
+                  (flow-state-lattice flow-value-bounded-lattice))
                 flow-state-same-chain?
                 flow-state-chain-hash-code
                 succ-states/flow pop-succ-states/flow))
