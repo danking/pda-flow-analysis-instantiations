@@ -79,6 +79,6 @@
                 close?
                 (get-join-semi-lattice-from-lattice
                   (flow-state-lattice flow-value-bounded-lattice))
-                flow-state-same-chain?
-                flow-state-chain-hash-code
+                flow-state-same-sub-lattice?
+                flow-state-sub-lattice-hash-code
                 prev-states/flow prev-states-across/flow))
