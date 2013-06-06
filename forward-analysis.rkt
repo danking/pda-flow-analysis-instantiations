@@ -39,6 +39,18 @@
   (define (pop-succ-states push pop)
     (abstract-step/new-stack pop (abstract-state-st push)))
 
+  (define (flow-state-same-sub-lattice? fs1 fs2 [recur equal?])
+    (astate-same-sub-lattice? (flow-state-astate fs1)
+                              (flow-state-astate fs2)
+                              recur))
+  (define (flow-state-sub-lattice-hash-code fs [recur equal-hash-code])
+    (astate-sub-lattice-hash-code (flow-state-astate fs) recur))
+
+  (define flow-state-lattice
+    (pointwise-lattice flow-state
+      [flow-state-astate astate-lattice]
+      [flow-state-flow-value flow-value-bounded-lattice]))
+
   ;; succ-states/flow : FlowState -> [SetOf FlowState]
   (define (succ-states/flow fstate)
     (match-define (flow-state astate fv) fstate)
