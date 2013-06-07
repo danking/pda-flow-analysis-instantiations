@@ -36,7 +36,8 @@
       flow-value
       (meet (sub1 flow-value) 0)))
 
-(define (min-headroom-flow-function astate flow-value)
+(define (min-headroom-flow-function push-astate push-fv
+                                    astate flow-value)
   (cond [(push-astate? astate) (lattice-sub1 flow-value)]
         [(pop-astate? astate) (lattice-add1 flow-value)]
         [(stack-ensure-astate? astate)
@@ -46,8 +47,10 @@
                  (abstract-state-node astate))))]
         [else flow-value]))
 
-(define (min-headroom-pop-flow-function push-astate push-fv pop-astate pop-fv)
-  (meet push-fv (min-headroom-flow-function pop-astate pop-fv)))
+(define (min-headroom-pop-flow-function gp-astate gp-fv
+                                        push-astate push-fv
+                                        pop-astate pop-fv)
+  (meet push-fv (min-headroom-flow-function push-astate push-fv pop-astate pop-fv)))
 
 (define (inf? x)
   (eq? x 'infinity))

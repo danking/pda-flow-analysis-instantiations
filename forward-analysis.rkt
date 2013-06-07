@@ -35,10 +35,6 @@
   ;; pop-fstate? : FlowState -> Boolean
   (define pop-fstate? (lift-insn/flow pop-assign?))
 
-  ;; pop-succ-states : AState AState -> [SetOf AState]
-  (define (pop-succ-states push pop)
-    (abstract-step/new-stack pop (abstract-state-st push)))
-
   (define (flow-state-same-sub-lattice? fs1 fs2 [recur equal?])
     (astate-same-sub-lattice? (flow-state-astate fs1)
                               (flow-state-astate fs2)
@@ -51,25 +47,45 @@
       [flow-state-astate astate-lattice]
       [flow-state-flow-value flow-value-bounded-lattice]))
 
-  ;; succ-states/flow : FlowState -> [SetOf FlowState]
-  (define (succ-states/flow fstate)
-    (match-define (flow-state astate fv) fstate)
+  ;; succ-states/flow : FlowState FlowState
+  ;;                    ->
+  ;;                    [Values [SetOf FlowState] Configuration]
+  (define/match (succ-states/flow push-fstate node-fstate config)
+    [((flow-state push-astate push-fv) (flow-state node-astate node-fv) _)
+     (let-values (((succ-astates config)
+                   (successor-states push-astate node-astate config)))
+      (values (for/seteq ([astate~ (in-set succ-astates)])
+                (flow-state astate~ (fv-next push-astate push-fv
+                                             node-astate node-fv)))
+              config))])
 
-    (for/seteq ([astate~ (in-set (abstract-step astate))])
-      (flow-state astate~ (fv-next astate fv))))
-
-  ;; pop-succ-states/flow : FlowState FlowState -> [SetOf FlowState]
-  (define (pop-succ-states/flow push-fstate pop-fstate)
-    (match-define (flow-state push-astate push-fv) push-fstate)
-    (match-define (flow-state pop-astate pop-fv) pop-fstate)
-
-    (for/seteq ([astate~ (in-set (pop-succ-states push-astate pop-astate))])
-      (flow-state astate~ (pop-fv-next push-astate push-fv pop-astate pop-fv))))
+  ;; pop-succ-states/flow : FlowState FlowState FlowState Configuration
+  ;;                        ->
+  ;;                        [Values [SetOf FlowState] Configuration]
+  (define/match (pop-succ-states/flow gp-fstate push-fstate pop-fstate config)
+    [((flow-state gp-astate gp-fv)
+      (flow-state push-astate push-fv)
+      (flow-state pop-astate pop-fv)
+      _)
+     (let-values (((succ-astates config)
+                   (successor-states/new-stack gp-astate
+                                               push-astate
+                                               pop-astate
+                                               config)))
+       (values (for/seteq ([astate~ (in-set succ-astates)])
+                 (flow-state astate~ (pop-fv-next gp-astate
+                                                  gp-fv
+                                                  push-astate
+                                                  push-fv
+                                                  pop-astate
+                                                  pop-fv)))
+               config))])
 
   (FlowAnalysis (set
                  (initial-flow-state
                   (pda-risc-enh-initial-term pda-risc-enh)
                   (bounded-lattice-bottom flow-value-bounded-lattice)))
+                init-configuration
                 push-fstate? pop-fstate?
                 (get-join-semi-lattice-from-lattice
                   (flow-state-lattice flow-value-bounded-lattice))
