@@ -81,11 +81,13 @@
                                                   pop-fv)))
                config))])
 
+  (define initial-term (pda-risc-enh-initial-term pda-risc-enh))
+
   (FlowAnalysis (set
                  (initial-flow-state
-                  (pda-risc-enh-initial-term pda-risc-enh)
+                  initial-term
                   (bounded-lattice-bottom flow-value-bounded-lattice)))
-                init-configuration
+                (init-configuration initial-term)
                 push-fstate? pop-fstate?
                 (get-join-semi-lattice-from-lattice
                   (flow-state-lattice flow-value-bounded-lattice))
