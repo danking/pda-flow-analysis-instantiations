@@ -84,11 +84,12 @@
                      (or (inf? x) (inf? y)
                          (and (number? x) (number? y))))
                    (lambda (x _) 0)
-                   'infinity
-                   0))
+                   0
+                   'infinity))
 
 (define (min-headroom-analysis pda-risc)
   (forward-analysis min-headroom-bounded-lattice
+                    0
                     min-headroom-flow-function
                     min-headroom-pop-flow-function
                     pda-risc))

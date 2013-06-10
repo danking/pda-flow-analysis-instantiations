@@ -58,5 +58,6 @@
 
 (define ((max-needed-analysis lim) pda-risc)
   (backward-analysis (max-needed-lattice lim)
+                     ⊥
                      (max-needed-flow-function lim)
                      pda-risc))

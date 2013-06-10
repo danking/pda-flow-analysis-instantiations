@@ -17,6 +17,7 @@
 ;; Forward Analysis
 
 ;; forward-analysis : [Bounded-Lattice FlowValue]
+;;                    FlowValue
 ;;                    [AbstractState FlowValue -> FlowValue]
 ;;                    [AbstractState FlowValue AbstractState FlowValue
 ;;                       -> FlowValue]
@@ -26,6 +27,7 @@
 ;;                                  [Lattice FlowState]]
 ;;
 (define (forward-analysis flow-value-bounded-lattice
+                          initial-flow-value
                           fv-next
                           pop-fv-next
                           pda-risc-enh)
@@ -71,10 +73,7 @@
 
   (define initial-term (pda-risc-enh-initial-term pda-risc-enh))
 
-  (FlowAnalysis (set
-                 (initial-flow-state
-                  initial-term
-                  (bounded-lattice-bottom flow-value-bounded-lattice)))
+  (FlowAnalysis (set (initial-flow-state initial-term initial-flow-value))
                 (init-configuration initial-term)
                 push-fstate? pop-fstate?
                 (get-join-semi-lattice-from-lattice

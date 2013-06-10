@@ -61,6 +61,7 @@
 
 (define ((max-headroom-analysis lim) pda-risc)
   (forward-analysis (max-headroom-lattice lim)
+                    ⊥
                     (max-headroom-flow-function lim)
                     (max-headroom-pop-flow-function lim)
                     pda-risc))
