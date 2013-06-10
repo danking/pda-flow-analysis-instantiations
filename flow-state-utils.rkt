@@ -18,6 +18,6 @@
 
 ;; flow-state-lattice : [Semi-Lattice FlowState]
 (define (flow-state-lattice bounded-lattice)
-  (pointwise-bounded-lattice flow-state
-    [flow-state-astate astate-bounded-lattice]
+  (pointwise-lattice flow-state
+    [flow-state-astate astate-lattice]
     [flow-state-flow-value bounded-lattice]))
