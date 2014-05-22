@@ -9,7 +9,9 @@
          (only-in "../pda-to-pda-risc/risc-enhanced/data.rkt"
                   pda-risc-enh-initial-term
                   pop-assign?
-                  push?))
+                  push?
+                  ;; for task-debug-info
+                  pda-term->uid))
 
 (provide forward-analysis)
 
@@ -73,6 +75,11 @@
 
   (define initial-term (pda-risc-enh-initial-term pda-risc-enh))
 
+  (define/match (flowstate-debug-string flowstate)
+    [((flow-state (abstract-state: term in st tr re) fv))
+     (format "Task: (uid in st re tr fv) = (~a ~a ~a ~a ~a ~a)"
+             (pda-term->uid term) in st tr re fv)])
+
   (FlowAnalysis (set (initial-flow-state initial-term initial-flow-value))
                 (init-configuration initial-term)
                 push-fstate? pop-fstate?
@@ -80,4 +87,5 @@
                   (flow-state-lattice flow-value-bounded-lattice))
                 flow-state-same-sub-lattice?
                 flow-state-sub-lattice-hash-code
-                succ-states/flow pop-succ-states/flow))
+                succ-states/flow pop-succ-states/flow
+                flowstate-debug-string))
