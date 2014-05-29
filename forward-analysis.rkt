@@ -78,7 +78,7 @@
   (define/match (flowstate-debug-string flowstate)
     [((flow-state (abstract-state: term in st tr re) fv))
      (format "Task: (uid in st re tr fv) = (~a ~a ~a ~a ~a ~a)"
-             (pda-term->uid term) in st tr re fv)])
+             (pda-term->uid term) in st re tr fv)])
 
   (FlowAnalysis (set (initial-flow-state initial-term initial-flow-value))
                 (init-configuration initial-term)
