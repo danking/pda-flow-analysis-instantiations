@@ -52,22 +52,23 @@
   ;; single node.
   (define (join-accept-nodes pre [acc (list (seteq) (seteq) (seteq) '())])
     (pda-term (seteq) (seteq) (seteq) (seteq) (accept -1 '()))
-#;
-    (match-let
-     ([(list preds avail-regs live-regs rets)
 
-       ;; TODO: stick this match into fold-enhanced
-       (match term
-         [(pda-term preds _ avail-regs live-regs (accept _ rets))
-          (match-let ([(list preds^ ars^ lrs^ rets^) acc])
-                     (list (set-union preds preds^)
-                           (set-intersect avail-regs ars^)
-                           (set-intersect live-regs lrs^)
-                           (append rets rets^)))]
-         [_ acc])])
-     ;; /TODO
+    ;; (match-let
+    ;;  ([(list preds avail-regs live-regs rets)
 
-     (pda-term preds (seteq) avail-regs live-regs (accept -1 rets))))
+    ;;    ;; TODO: stick this match into fold-enhanced
+    ;;    (match term
+    ;;      [(pda-term preds _ avail-regs live-regs (accept _ rets))
+    ;;       (match-let ([(list preds^ ars^ lrs^ rets^) acc])
+    ;;                  (list (set-union preds preds^)
+    ;;                        (set-intersect avail-regs ars^)
+    ;;                        (set-intersect live-regs lrs^)
+    ;;                        (append rets rets^)))]
+    ;;      [_ acc])])
+    ;;  ;; /TODO
+
+    ;;  (pda-term preds (seteq) avail-regs live-regs (accept -1 rets)))
+    )
 
   ;; initial-state : PDA-RISC-ENH -> FlowState
   (define (initial-state pre)
