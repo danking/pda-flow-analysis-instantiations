@@ -83,4 +83,5 @@
                 flow-state-same-sub-lattice?
                 flow-state-sub-lattice-hash-code
                 prev-states/flow prev-states-across/flow
-                identity))
+                identity
+                (lambda (x) 0)))

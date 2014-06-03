@@ -11,7 +11,8 @@
                   pop-assign?
                   push?
                   ;; for task-debug-info
-                  pda-term->uid))
+                  pda-term->uid)
+         "../pda-to-pda-risc/risc-enhanced/term-scc-toposort.rkt")
 
 (provide forward-analysis)
 
@@ -80,6 +81,11 @@
      (format "Task: (uid in st re tr fv) = (~a ~a ~a ~a ~a ~a)"
              (pda-term->uid term) in st re tr fv)])
 
+  (define fstate-priority
+    (compose (curry dict-ref (pda-term-scc-priority-hash
+                              (pda-risc-enh-initial-term pda-risc-enh)))
+             flow-state->node))
+
   (FlowAnalysis (set (initial-flow-state initial-term initial-flow-value))
                 (init-configuration initial-term)
                 push-fstate? pop-fstate?
@@ -88,4 +94,5 @@
                 flow-state-same-sub-lattice?
                 flow-state-sub-lattice-hash-code
                 succ-states/flow pop-succ-states/flow
-                flowstate-debug-string))
+                flowstate-debug-string
+                fstate-priority))
