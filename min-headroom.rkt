@@ -4,10 +4,12 @@
          ;; TODO this should be a built-in module
          "../lattice/lattice.rkt"
          "../semantics/abstract.rkt"
-         "../semantics/abstract-utilities.rkt"
          (only-in "../pda-to-pda-risc/risc-enhanced/data.rkt"
                   stack-ensure-hdrm
-                  pda-term-insn))
+                  pda-term-insn
+                  push?
+                  pop-assign?
+                  stack-ensure?))
 
 (provide min-headroom-analysis
          min-headroom-bounded-lattice
@@ -36,21 +38,21 @@
       flow-value
       (meet (sub1 flow-value) 0)))
 
-(define (min-headroom-flow-function push-astate push-fv
-                                    astate flow-value)
-  (cond [(push-astate? astate) (lattice-sub1 flow-value)]
-        [(pop-astate? astate) (lattice-add1 flow-value)]
-        [(stack-ensure-astate? astate)
-         (meet flow-value
-               (stack-ensure-hdrm
-                (pda-term-insn
-                 (abstract-state-node astate))))]
+(define (min-headroom-flow-function _1 _2 _3
+                                    term _4 flow-value)
+  (define insn (pda-term-insn term))
+  (cond [(push? insn) (lattice-sub1 flow-value)]
+        [(pop-assign? insn) (lattice-add1 flow-value)]
+        [(stack-ensure? insn)
+         (meet flow-value (stack-ensure-hdrm insn))]
         [else flow-value]))
 
-(define (min-headroom-pop-flow-function gp-astate gp-fv
-                                        push-astate push-fv
-                                        pop-astate pop-fv)
-  (meet push-fv (min-headroom-flow-function push-astate push-fv pop-astate pop-fv)))
+(define (min-headroom-pop-flow-function _1 _2 _3
+                                        push-term push-astate push-fv
+                                        pop-term pop-astate pop-fv)
+  (meet push-fv
+        (min-headroom-flow-function push-term push-astate push-fv
+                                    pop-term pop-astate pop-fv)))
 
 (define (inf? x)
   (eq? x 'infinity))
@@ -89,7 +91,7 @@
 
 (define (min-headroom-analysis pda-risc)
   (forward-analysis min-headroom-bounded-lattice
-                    0
+                    'infinity ;; 0
                     min-headroom-flow-function
                     min-headroom-pop-flow-function
                     pda-risc))
