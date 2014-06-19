@@ -6,6 +6,8 @@
          "../lattice/lattice.rkt"
          "../semantics/abstract.rkt"
          "../semantics/flow.rkt"
+         "../semantics/monadic-configuration.rkt"
+         (prefix-in monad: "../semantics/monads.rkt")
          "../pda-to-pda-risc/risc-enhanced/fold-enhanced.rkt"
          (only-in "../pda-to-pda-risc/risc-enhanced/data.rkt"
                   pda-risc-enh-initial-term
@@ -14,6 +16,17 @@
                   push?
                   ;; for task-debug-info
                   pda-term->uid))
+
+(monad:instantiate-monad-ops
+ ConfigMonad-bind ConfigMonad-return ConfigMonad-creator ConfigMonad-accessor
+ (~>~ monad:~>~)
+ (~> monad:~>)
+ (for/set~>~ monad:for/set~>~)
+ (for/list~>~ monad:for/list~>~)
+ (mapM monad:mapM))
+
+(define-syntax-rule (return x ...) (ConfigMonad-return x ...))
+(define-syntax-rule (bind x ...) (ConfigMonad-bind x ...))
 
 (provide forward-analysis)
 
@@ -40,25 +53,37 @@
                           fv-next
                           pop-fv-next
                           pda-risc-enh)
+  ;; flow-function-map : [Map Term [FlowFunction Term AStack AState]]
   (define flow-function-map (make-hash))
-  (define (compute-and-set-ff! t)
-    (define ff (compute-flow-function t))
-    (hash-set! flow-function-map t ff))
 
-  (let loop
-      ([W (seteq (pda-risc-enh-initial-term pda-risc-enh))]
-       [Seen (seteq)])
-    (cond [(set-empty? W)]
-          [else (compute-and-set-ff! (set-first W))
-                (define-values (new-W new-Seen)
-                  (for/fold
-                      ([W (set-rest W)]
-                       [Seen Seen])
-                      ([new (pda-term-succs (set-first W))])
-                    (if (set-member? Seen new)
-                        (values W Seen)
-                        (values (set-add W new) (set-add Seen new)))))
-                (loop new-W new-Seen)]))
+  ;; compute-and-set-ff! : Term -> [ConfigMonad Void]
+  (define (compute-and-set-ff! t)
+    (~> ((ff (compute-flow-function t)))
+      (hash-set! flow-function-map t ff)))
+
+  ;; build-flow-function-map : [SetEqOf Term]
+  ;;                           [SetEqOf Term]
+  ;;                           ->
+  ;;                           [ConfigMonad Void]
+  (define (build-flow-function-map W Seen)
+    (cond [(set-empty? W) (return (void))]
+          [else (~> ((_ (compute-and-set-ff! (set-first W)))
+                     (result (let-values (((new-W new-Seen)
+                                           (for/fold
+                                               ([W2 (set-rest W)]
+                                                [Seen Seen])
+                                               ([new (pda-term-succs (set-first W))])
+                                             (if (set-member? Seen new)
+                                                 (values W2 Seen)
+                                                 (values (set-add W2 new)
+                                                         (set-add Seen new))))))
+                               (build-flow-function-map new-W new-Seen))))
+                  result)]))
+
+  (define-values (_ configuration)
+    (run-config-monad
+     (build-flow-function-map (seteq (pda-risc-enh-initial-term pda-risc-enh))
+                              (seteq (pda-risc-enh-initial-term pda-risc-enh)))))
 
   ;; push-fstate? : FlowState -> Boolean
   (define push-fstate? (lift-insn/flow push?))
@@ -76,13 +101,14 @@
       _)
      (define new-fv (fv-next push-term push-astate push-fv
                              node-term node-astate node-fv))
-     (define succ-terms+astates
-       ((hash-ref flow-function-map node-term) node-astate))
-     (values (for/set ([term+astate succ-terms+astates])
-               (flow-state (first term+astate)
-                           (second term+astate)
-                           new-fv))
-             config)])
+     (run-config-monad*
+      config
+      (~> ((succ-terms+astates ((hash-ref flow-function-map node-term)
+                                node-astate)))
+        (for/set ([term+astate succ-terms+astates])
+          (flow-state (first term+astate)
+                      (second term+astate)
+                      new-fv))))])
 
   ;; pop-succ-states/flow : FlowState FlowState FlowState Configuration
   ;;                        ->
@@ -95,14 +121,14 @@
      (define new-fv (pop-fv-next gp-term gp-astate gp-fv
                                  push-term push-astate push-fv
                                  pop-term pop-astate pop-fv))
-     (define succ-terms+astates
-       ((hash-ref flow-function-map pop-term)
-        (abstract-state-st push-astate) pop-astate))
-     (values (for/set ([term+astate succ-terms+astates])
-               (flow-state (first term+astate)
-                           (second term+astate)
-                           new-fv))
-             config)])
+     (run-config-monad*
+      config
+      (~> ((succ-terms+astates ((hash-ref flow-function-map pop-term)
+                                (abstract-state-st push-astate) pop-astate)))
+        (for/set ([term+astate succ-terms+astates])
+          (flow-state (first term+astate)
+                      (second term+astate)
+                      new-fv))))])
 
   (define initial-term (pda-risc-enh-initial-term pda-risc-enh))
 
@@ -112,10 +138,10 @@
              (pda-term->uid term) in st re tr fv)])
 
   (FlowAnalysis (set (initial-flow-state initial-term initial-flow-value))
-                #f
+                configuration
                 push-fstate? pop-fstate?
                 (get-join-semi-lattice-from-lattice
-                  (flow-state-lattice flow-value-bounded-lattice))
+                 (flow-state-lattice flow-value-bounded-lattice))
                 flow-state-same-sub-lattice?
                 flow-state-sub-lattice-hash-code
                 succ-states/flow pop-succ-states/flow
