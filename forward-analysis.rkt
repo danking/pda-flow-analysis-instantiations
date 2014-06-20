@@ -11,6 +11,7 @@
          "../pda-to-pda-risc/risc-enhanced/fold-enhanced.rkt"
          (only-in "../pda-to-pda-risc/risc-enhanced/data.rkt"
                   pda-risc-enh-initial-term
+                  pdarisc-reg-uid
                   pda-term-succs
                   pop-assign?
                   push?
@@ -53,6 +54,7 @@
                           fv-next
                           pop-fv-next
                           pda-risc-enh)
+  (define register-count (pdarisc-reg-uid pda-risc-enh))
   ;; flow-function-map : [Map Term [FlowFunction Term AStack AState]]
   (define flow-function-map (make-hash))
 
@@ -81,9 +83,11 @@
                   result)]))
 
   (define-values (_ configuration)
-    (run-config-monad
+    (run-config-monad*
+     (init-configuration register-count)
      (build-flow-function-map (seteq (pda-risc-enh-initial-term pda-risc-enh))
-                              (seteq (pda-risc-enh-initial-term pda-risc-enh)))))
+                              (seteq (pda-risc-enh-initial-term
+                                      pda-risc-enh)))))
 
   ;; push-fstate? : FlowState -> Boolean
   (define push-fstate? (lift-insn/flow push?))
@@ -137,7 +141,9 @@
      (format "Task: (uid in st re tr fv) = (~a ~a ~a ~a ~a ~a)"
              (pda-term->uid term) in st re tr fv)])
 
-  (FlowAnalysis (set (initial-flow-state initial-term initial-flow-value))
+  (FlowAnalysis (set (initial-flow-state initial-term
+                                         initial-flow-value
+                                         register-count))
                 configuration
                 push-fstate? pop-fstate?
                 (get-join-semi-lattice-from-lattice
