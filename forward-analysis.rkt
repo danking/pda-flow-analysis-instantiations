@@ -142,8 +142,7 @@
              (pda-term->uid term) in st tr re fv)])
 
   (FlowAnalysis (set (initial-flow-state initial-term
-                                         initial-flow-value
-                                         register-count))
+                                         initial-flow-value))
                 configuration
                 push-fstate? pop-fstate?
                 (get-join-semi-lattice-from-lattice
